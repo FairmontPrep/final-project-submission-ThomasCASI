@@ -1,85 +1,66 @@
 import java.util.ArrayList;
+import java.util.List;
 
 public class MazePathFinder {
+    /**
+     * core logic: given a grid of 0/1, find the unique path of 1s
+     * that starts on one wall, ends on an adjacent wall,
+     * makes at least one 90° turn, and moves only orthogonally.
+     */
+    public static List<String> findPath(ArrayList<ArrayList<Integer>> map) {
+        List<String> path = new ArrayList<>();
+        int R = map.size();
+        if (R == 0) return path;
+        int C = map.getFirst().size();
 
-    // return the list of path
-    public static ArrayList<String> findPath(ArrayList<ArrayList<Integer>> map) {
-        ArrayList<String> path = new ArrayList<>();
+        // find start on walls: top → left → right → bottom
+        int sr = -1, sc = -1;
+        for (int c = 0; c < C && sr < 0; c++) if (map.getFirst().get(c) == 1) { sr=0; sc=c; }
+        for (int r = 0; r < R && sr < 0; r++) if (map.get(r).getFirst() == 1) { sr=r; sc=0; }
+        for (int r = 0; r < R && sr < 0; r++) if (map.get(r).get(C-1) == 1) { sr=r; sc=C-1; }
+        for (int c = 0; c < C && sr < 0; c++) if (map.get(R-1).get(c) == 1) { sr=R-1; sc=c; }
+        if (sr<0) return path;
 
-        int rows = map.size();
-        int cols = map.getFirst().size();
-
-        int startRow = -1, startCol = -1;
-        for (int r = 0; r < rows; r++) {
-            if (map.get(r).getFirst() == 1) {
-                startRow = r;
-                startCol = 0;
-                break;
-            }
-        }
-        if (startRow == -1) {
-            for (int c = 0; c < cols; c++) {
-                if (map.getFirst().get(c) == 1) {
-                    startRow = 0;
-                    startCol = c;
-                    break;
-                }
-            }
-        }
-        // TODO: the third one
-
-        if (startRow == -1) {
-            System.out.println("未找到起点！");
-            return path;
-        }
-
-        // DFS
-        boolean[][] visited = new boolean[rows][cols];
-        dfs(map, startRow, startCol, visited, path, -1, -1, startRow, startCol);
-
+        boolean[][] vis = new boolean[R][C];
+        dfs(map, vis, path, -1, -1, sr, sc, sr, sc, false);
         return path;
     }
 
-    private static boolean dfs(ArrayList<ArrayList<Integer>> map, int r, int c, boolean[][] visited, ArrayList<String> path,
-                               int prevR, int prevC, int startR, int startC) {
-        int rows = map.size();
-        int cols = map.getFirst().size();
+    private static boolean dfs(ArrayList<ArrayList<Integer>> m, boolean[][] v, List<String> p, int pr, int pc, int r, int c, int sr, int sc, boolean turned) {
+        int R = m.size(), C = m.getFirst().size();
+        if (r<0||r>=R||c<0||c>=C||m.get(r).get(c)!=1||v[r][c]) return false;
+        v[r][c] = true;
+        p.add("A["+r+"]["+c+"]");
 
-        if (r < 0 || r >= rows || c < 0 || c >= cols) return false;
-        if (map.get(r).get(c) != 1 || visited[r][c]) return false;
-
-        visited[r][c] = true;
-        path.add("A[" + r + "][" + c + "]");
-
-        if (isExit(map, r, c, startR, startC, path)) {
-            return true;
+        boolean t = turned;
+        if (pr>=0 && p.size()>=3) {
+            int dr = r-pr, dc = c-pc;
+            String b = p.get(p.size()-2);
+            int br = Integer.parseInt(b.substring(b.indexOf('[')+1,b.indexOf(']')));
+            int bc = Integer.parseInt(b.substring(b.lastIndexOf('[')+1,b.lastIndexOf(']')));
+            int dr2 = pr-br, dc2 = pc-bc;
+            if (dr!=dr2 || dc!=dc2) t = true;
         }
 
-        int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};
-        for (int[] d : dirs) {
-            int nr = r + d[0], nc = c + d[1];
-            if (dfs(map, nr, nc, visited, path, r, c, startR, startC)) {
-                return true;
-            }
+        if (isEnd(r,c,sr,sc,R,C,t)) return true;
+        int[][] D = {{-1,0},{1,0},{0,-1},{0,1}};
+        for (int[] d : D) {
+            if (dfs(m, v, p, r, c, r+d[0], c+d[1], sr, sc, t)) return true;
         }
 
-        path.removeLast();
+        p.removeLast();
+        v[r][c] = false;
         return false;
     }
 
-    private static boolean isExit(ArrayList<ArrayList<Integer>> map, int r, int c, int startR, int startC, ArrayList<String> path) {
-        int rows = map.size();
-        int cols = map.getFirst().size();
-
-        // 当前点必须是墙上的1（四边之一）
-        boolean onWall = (r == 0 || r == rows - 1 || c == 0 || c == cols - 1);
+    private static boolean isEnd(int r, int c, int sr, int sc, int R, int C, boolean t) {
+        if (!t) return false;
+        if (r==sr && c==sc) return false;
+        boolean onWall = (r==0||r==R-1||c==0||c==C-1);
         if (!onWall) return false;
-
-        // 不能和起点在同一边（不能直通），必须在相邻墙面（左右或上下相邻）
-        if ((startR == 0 && r == rows - 1) || (startR == rows -1 && r == 0)) return false;
-        if ((startC == 0 && c == cols -1) || (startC == cols -1 && c == 0)) return false;
-        return startR != r || startC != c;
-
-        // TODO: detect the turn
+        if (sr==0 && r==R-1) return false;
+        if (sr==R-1 && r==0) return false;
+        if (sc==0 && c==C-1) return false;
+        return sc != C - 1 || c != 0;
     }
 }
