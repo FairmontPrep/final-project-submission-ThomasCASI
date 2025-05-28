@@ -16,7 +16,8 @@ public class Client {
                 Arrays.asList(0, 1, 0, 0, 0, 0),
                 Arrays.asList(0, 1, 0, 0, 0, 0)
         );
-        System.out.println(MazePathFinder.findPath(map));
+        List<String> path = MazePathFinder.findPath(map);
+        MazePathFinder.printPathOnMap(map, path);
     }
 
     static class MazePathFinder {
@@ -78,6 +79,37 @@ public class Client {
             if (sr == R - 1 && r == 0) return true;
             if (sc == 0 && c == C - 1) return true;
             return sc == C - 1 && c == 0;
+        }
+
+        private static void printPathOnMap(List<List<Integer>> map, List<String> path) {
+            int R = map.size(), C = map.getFirst().size();
+            boolean[][] isPath = new boolean[R][C];
+
+            for (String s : path) {
+                int r = Integer.parseInt(s.substring(s.indexOf('[') + 1, s.indexOf(']')));
+                int c = Integer.parseInt(s.substring(s.lastIndexOf('[') + 1, s.lastIndexOf(']')));
+                isPath[r][c] = true;
+            }
+
+            System.out.print("   ");
+            for (int c = 0; c < C; c++) {
+                System.out.printf("%2d", c);
+            }
+            System.out.println();
+
+            for (int r = 0; r < R; r++) {
+                System.out.printf("%2d ", r);
+                for (int c = 0; c < C; c++) {
+                    if (isPath[r][c]) {
+                        System.out.print("■ ");
+                    } else if (map.get(r).get(c) == 1) {
+                        System.out.print("· ");
+                    } else {
+                        System.out.print("  ");
+                    }
+                }
+                System.out.println();
+            }
         }
     }
 }
